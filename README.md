@@ -4,7 +4,7 @@ My bash launcher for devcontainer instance.
 
 ## motivation
 
-As of November 2022 `devcontainer exec` does not work with interactive shells.
+As of November 2022, `devcontainer exec` does not seem to work for interactive shells.
 
 # Usage
 
