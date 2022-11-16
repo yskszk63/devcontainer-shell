@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 func lookupPaths() (string, string, error) {
@@ -27,8 +28,31 @@ type devcontainerUpOutput struct {
 	RemoteWorkspaceFolder string `json:"remoteWorkspaceFolder"`
 }
 
-func devcontainerUp(devcontainer string) (*devcontainerUpOutput, error) {
-	proc := exec.Command(devcontainer, "--workspace-folder", ".", "up")
+func resolveWorkspaceFolder() (string, string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", "", err
+	}
+
+	wf := cwd
+	rel := ""
+	for {
+		_, err := os.Stat(filepath.Join(wf, ".devcontainer"))
+		if !os.IsNotExist(err) {
+			return wf, rel, nil
+		}
+
+		if wf == "/" {
+			return "", "", errors.New("working-folder not found.")
+		}
+
+		rel = filepath.Join(filepath.Base(wf), rel)
+		wf = filepath.Dir(wf)
+	}
+}
+
+func devcontainerUp(devcontainer, workingFolder string) (*devcontainerUpOutput, error) {
+	proc := exec.Command(devcontainer, "--workspace-folder", workingFolder, "up")
 	proc.Stderr = os.Stderr
 	raw, err := proc.Output()
 	if err != nil {
@@ -43,9 +67,9 @@ func devcontainerUp(devcontainer string) (*devcontainerUpOutput, error) {
 	return output, nil
 }
 
-func dockerExec(bin, docker string, output *devcontainerUpOutput) error {
+func dockerExec(bin, docker string, output *devcontainerUpOutput, rel string) error {
 	// TODO execve? on xxix
-	proc := exec.Command(docker, "exec", "-it", "-u", output.RemoteUser, "-w", output.RemoteWorkspaceFolder, output.ContainerId, bin)
+	proc := exec.Command(docker, "exec", "-it", "-u", output.RemoteUser, "-w", filepath.Join(output.RemoteWorkspaceFolder, rel), output.ContainerId, bin)
 	proc.Stdin = os.Stdin
 	proc.Stdout = os.Stdout
 	proc.Stderr = os.Stderr
@@ -62,16 +86,20 @@ func run() error {
 		return err
 	}
 
-	output, err := devcontainerUp(devcontainer)
+	wf, rel, err := resolveWorkspaceFolder()
+	if err != nil {
+		return err
+	}
+
+	output, err := devcontainerUp(devcontainer, wf)
 	if err != nil {
 		return err
 	}
 	if output.Outcome != "success" {
 		return errors.New("failed to `devcontainer up`")
 	}
-	fmt.Printf("%s %s %s\n", output.ContainerId, output.RemoteUser, output.RemoteWorkspaceFolder)
 
-	if err := dockerExec("bash", docker, output); err != nil {
+	if err := dockerExec("bash", docker, output, rel); err != nil {
 		return err
 	}
 	return nil
