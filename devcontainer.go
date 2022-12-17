@@ -31,6 +31,30 @@ func ResolveWorkspaceFolder(fsys fs.FS, cwd string) (string, string, error) {
 	}
 }
 
+type DevcontainerUpInput struct {
+	Bin             string
+	WorkspaceFolder string
+	Mounts          []string
+}
+
+func (d *DevcontainerUpInput) buildArgs() ([]string, error) {
+	if d.WorkspaceFolder == "" {
+		return nil, errors.New("WorkspaceFolder must set.")
+	}
+
+	ret := []string{
+		"up",
+		"--workspace-folder",
+		d.WorkspaceFolder,
+	}
+
+	for _, mount := range d.Mounts {
+		ret = append(ret, "--mount", mount)
+	}
+
+	return ret, nil
+}
+
 type DevcontainerUpOutput struct {
 	Outcome               string `json:"outcome"`
 	ContainerId           string `json:"containerId"`
@@ -38,8 +62,13 @@ type DevcontainerUpOutput struct {
 	RemoteWorkspaceFolder string `json:"remoteWorkspaceFolder"`
 }
 
-func DevcontainerUp(bin, workspaceFolder string) (*DevcontainerUpOutput, error) {
-	proc := exec.Command(bin, "--workspace-folder", workspaceFolder, "up")
+func DevcontainerUp(input DevcontainerUpInput) (*DevcontainerUpOutput, error) {
+	args, err := input.buildArgs()
+	if err != nil {
+		return nil, err
+	}
+
+	proc := exec.Command(input.Bin, args...)
 	proc.Stdin = nil
 	proc.Stderr = os.Stderr
 

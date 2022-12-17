@@ -2,6 +2,7 @@ package devcontainershell
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"syscall"
@@ -79,4 +80,22 @@ func (d *DockerExec) SyscallExec() error {
 	argv = append(argv, args...)
 
 	return syscall.Exec(d.Docker, argv, os.Environ())
+}
+
+func DockerVolumeCreate(docker, name string) error {
+	proc := exec.Command(docker, "volume", "create", name)
+	proc.Stdin = nil
+	proc.Stdout = nil
+	proc.Stderr = os.Stderr
+
+	return proc.Run()
+}
+
+func DockerCp(docker, srcPath, container, destPath string) error {
+	proc := exec.Command(docker, "cp", srcPath, fmt.Sprintf("%s:%s", container, destPath))
+	proc.Stdin = nil
+	proc.Stdout = nil
+	proc.Stderr = os.Stderr
+
+	return proc.Run()
 }
