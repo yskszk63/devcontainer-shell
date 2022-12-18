@@ -3,12 +3,12 @@ package devcontainershell
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"os"
-	"os/exec"
 	"os/signal"
 
 	"golang.org/x/sync/errgroup"
@@ -24,37 +24,35 @@ func remoteJob(cx context.Context, stdin *io.PipeReader, stdout *io.PipeWriter, 
 		<-cx.Done()
 	}()
 
-	docker, err := exec.LookPath("docker")
+	docker, err := resolveDocker()
 	if err != nil {
 		return err
 	}
 
 	// if already launched
 	// `open /data/devcontainer-shell-agent: text file busy` occurres.
-	install := DockerRunRm{
-		Docker: docker,
-		Image:  "ghcr.io/yskszk63/devcontainer-shell-agent",
-		Mounts: []string{
+	install := dockerRunRm{
+		image: "ghcr.io/yskszk63/devcontainer-shell-agent",
+		mounts: []string{
 			"type=volume,src=devcontainer-shell,dst=/data",
 		},
-		Cmd: []string{
+		cmd: []string{
 			"install",
 			"/data/devcontainer-shell-agent",
 		},
 	}
-	if err := install.Run(); err != nil {
+	if err := docker.run(install); err != nil {
 		return err
 	}
 
-	exec := DockerExec{
-		Docker:      docker,
-		ContainerId: container,
-		Bin:         "/opt/devcontainer-shell/devcontainer-shell-agent",
-		Args:        []string{"watch-listens"},
-		Notty:       true,
-		NoInput:     false,
+	exec := dockerExec{
+		containerId: container,
+		bin:         "/opt/devcontainer-shell/devcontainer-shell-agent",
+		args:        []string{"watch-listens"},
+		notty:       true,
+		noInput:     false,
 	}
-	return exec.ExecWithPipe(cx, stdin, stdout)
+	return docker.runWithPipe(exec, stdin, stdout)
 }
 
 func forward(cx context.Context, addr string, port uint16, sock net.Conn) error {
@@ -117,16 +115,19 @@ func localJob(cx context.Context, stdin *io.PipeWriter, stdout *io.PipeReader, c
 	cx, cancel := context.WithCancel(cx)
 	defer cancel()
 
-	docker, err := exec.LookPath("docker")
+	docker, err := resolveDocker()
 	if err != nil {
 		return err
 	}
 
-	inspect, err := DockerContainerInspect(docker, container)
-	if err != nil {
+	var inspect []dockerContainerInspectOutput
+	if err := docker.runWithParse(dockerContainerInspect(container), &inspect); err != nil {
 		return err
 	}
-	addr := inspect.NetworkSettings.IPAddress
+	if len(inspect) < 1 {
+		return errors.New("no result found.")
+	}
+	addr := inspect[0].NetworkSettings.IPAddress
 
 	listens := make(map[uint16]context.CancelFunc)
 	dec := json.NewDecoder(stdout)
@@ -198,7 +199,7 @@ func ForwardPort(container string) error {
 	go func() {
 		defer cancel()
 
-		c := make(chan os.Signal)
+		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
 		<-c
 	}()

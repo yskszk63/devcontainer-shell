@@ -5,45 +5,37 @@ import (
 	"testing"
 )
 
-func TestBuildArgs(t *testing.T) {
+func TestDockerExec(t *testing.T) {
 	tests := []struct {
 		name   string
-		target DockerExec
+		target dockerExec
 		wants  []string
 		err    string
 	}{
-		{"invalid1", DockerExec{}, nil, "containerId must set."},
+		{"invalid1", dockerExec{}, nil, "containerId must set."},
 
-		{"invalid2", DockerExec{
-			Docker: "a",
-		}, nil, "containerId must set."},
-
-		{"invalid2", DockerExec{
-			Docker:      "a",
-			ContainerId: "b",
+		{"invalid2", dockerExec{
+			containerId: "b",
 		}, nil, "bin must set."},
 
-		{"bin only", DockerExec{
-			Docker:      "a",
-			ContainerId: "b",
-			Bin:         "c",
-		}, []string{"exec", "-it", "b", "c"}, ""},
+		{"bin only", dockerExec{
+			containerId: "b",
+			bin:         "c",
+		}, []string{"exec", "-t", "-i", "b", "c"}, ""},
 
-		{"with full", DockerExec{
-			Docker:      "a",
-			ContainerId: "b",
-			Bin:         "c",
-			User:        "u",
-			Cwd:         "w",
-			Args:        []string{"a1", "a2"},
-		}, []string{"exec", "-it", "-u", "u", "-w", "w", "b", "c", "a1", "a2"}, ""},
+		{"with full", dockerExec{
+			containerId: "b",
+			bin:         "c",
+			user:        "u",
+			cwd:         "w",
+			args:        []string{"a1", "a2"},
+		}, []string{"exec", "-t", "-i", "-u", "u", "-w", "w", "b", "c", "a1", "a2"}, ""},
 
-		{"no tty", DockerExec{
-			Docker:      "a",
-			ContainerId: "b",
-			Bin:         "c",
-			Notty:       true,
-		}, []string{"exec", "b", "c"}, ""},
+		{"no tty", dockerExec{
+			containerId: "b",
+			bin:         "c",
+			notty:       true,
+		}, []string{"exec", "-i", "b", "c"}, ""},
 	}
 
 	for _, test := range tests {
