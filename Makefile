@@ -10,9 +10,6 @@ nop:
 run:
 	$(GO) run .
 
-$(BIN): $(SRCS)
-	$(DEVCONTAINER) exec --workspace-folder . env CGO_ENABLED=0 go build -o $@
-
 .PHONY: devcontainer-build
 devcontainer-build:
 	$(DEVCONTAINER) --workspace-folder . build
@@ -22,6 +19,10 @@ devcontainer-up:
 	$(DEVCONTAINER) --workspace-folder . up
 
 
+
+.PHONY: devcontainer-shell
+devcontainer-shell:
+	go build -a -tags netgo -installsuffix netgo -ldflags='-s -w -extldflags "-static"' -o=$@ ./bin/devcontainer-shell
 
 .PHONY: devcontainer-shell-agent
 devcontainer-shell-agent:
