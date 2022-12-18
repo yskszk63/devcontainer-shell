@@ -3,6 +3,7 @@ package cmd
 import (
 	"log"
 	"os"
+	osexec "os/exec"
 
 	"github.com/spf13/cobra"
 
@@ -11,12 +12,13 @@ import (
 
 var shell string
 var noInject bool
+var noForwardport bool
 
 func exec(cmd *cobra.Command, args []string) {
 	ds := new(devcontainershell.DevcontainerShell)
 
 	if !noInject {
-		self, err := os.Executable()
+		self, err := os.Executable() // TODO REMOVE
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -27,6 +29,20 @@ func exec(cmd *cobra.Command, args []string) {
 
 	if err := ds.Up(); err != nil {
 		log.Fatal(err)
+	}
+
+	if !noForwardport {
+		if noInject {
+			log.Fatal("err...") // TODO
+		}
+
+		self, err := os.Executable() // TODO REMOVE
+		if err != nil {
+			log.Fatal(err)
+		}
+		proc := osexec.Command(self, "forwardport", ds.ContainerId())
+		proc.Stdin = nil
+		proc.Start()
 	}
 
 	if err := ds.Exec(shell); err != nil {
@@ -42,7 +58,8 @@ var execCmd = &cobra.Command {
 
 func setupExecCmd(c *cobra.Command) {
 	c.Flags().StringVarP(&shell, "shell", "s", "bash", "using shell program")
-	c.Flags().BoolVarP(&noInject, "no inject", "I", false, "no inject agent")
+	c.Flags().BoolVarP(&noInject, "no-inject", "I", false, "no inject agent")
+	c.Flags().BoolVarP(&noForwardport, "no-forward", "F", false, "no foward port")
 }
 
 func init() {

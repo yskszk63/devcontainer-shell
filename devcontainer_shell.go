@@ -18,6 +18,10 @@ type DevcontainerShell struct {
 	injectBin            string
 }
 
+func (d *DevcontainerShell) ContainerId() string {
+	return d.devcontainerUpOutput.ContainerId
+}
+
 func (d *DevcontainerShell) ensureDockerResolved() error {
 	if d.dockerPath != "" {
 		return nil
