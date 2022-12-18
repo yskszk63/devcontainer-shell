@@ -1,0 +1,41 @@
+name: Publish docker image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: docker/setup-buildx-action@v2
+
+      - uses: docker/metadata-action@v4
+        id: meta
+        with:
+          images: ghcr.io/yskszk63/devcontainer-shell-agent
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=tag
+            type=ref,event=pr
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./docker/Dockerfile.agent
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

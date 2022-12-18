@@ -12,23 +12,27 @@ import (
 type DevcontainerShell struct {
 	mutex                sync.Mutex
 	devcontainerUpOutput *DevcontainerUpOutput
-	dockerPath           string
+	docker               *docker
 	devcontainerPath     string
 	containerCwd         string
 	injectBin            string
 }
 
+func (d *DevcontainerShell) ContainerId() string {
+	return d.devcontainerUpOutput.ContainerId
+}
+
 func (d *DevcontainerShell) ensureDockerResolved() error {
-	if d.dockerPath != "" {
+	if d.docker != nil {
 		return nil
 	}
 
-	docker, err := exec.LookPath("docker")
+	docker, err := resolveDocker()
 	if err != nil {
 		return err
 	}
 
-	d.dockerPath = docker
+	d.docker = docker
 	return nil
 }
 
@@ -64,7 +68,7 @@ func (d *DevcontainerShell) Inject(self string) error {
 		return err
 	}
 
-	if err := DockerVolumeCreate(d.dockerPath, "devcontainer-shell"); err != nil {
+	if err := d.docker.run(dockerVolumeCreate("devcontainer-shell")); err != nil {
 		return err
 	}
 
@@ -107,11 +111,6 @@ func (d *DevcontainerShell) Up() error {
 		return errors.New("failed to run `devcontainer up`")
 	}
 
-	if d.injectBin != "" {
-		// TODO skip if Unnecessary.
-		DockerCp(d.dockerPath, d.injectBin, o.ContainerId, "/opt/devcontainer-shell/devcontainer-shell")
-	}
-
 	d.devcontainerUpOutput = o
 	d.containerCwd = filepath.Join(o.RemoteWorkspaceFolder, rel)
 
@@ -123,11 +122,10 @@ func (d *DevcontainerShell) Exec(prog string) error {
 		return errors.New("must call Up() before")
 	}
 
-	dockerExec := DockerExec{
-		Docker:      d.dockerPath,
-		ContainerId: d.devcontainerUpOutput.ContainerId,
-		Bin:         prog,
-		Cwd:         d.containerCwd,
+	dockerExec := dockerExec{
+		containerId: d.devcontainerUpOutput.ContainerId,
+		bin:         prog,
+		cwd:         d.containerCwd,
 	}
-	return dockerExec.Exec()
+	return d.docker.run(dockerExec)
 }
