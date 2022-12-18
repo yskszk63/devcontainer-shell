@@ -29,6 +29,8 @@ func remoteJob(cx context.Context, stdin *io.PipeReader, stdout *io.PipeWriter, 
 		return err
 	}
 
+	// if already launched
+	// `open /data/devcontainer-shell-agent: text file busy` occurres.
 	install := DockerRunRm{
 		Docker: docker,
 		Image:  "ghcr.io/yskszk63/devcontainer-shell-agent",
