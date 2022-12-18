@@ -107,11 +107,6 @@ func (d *DevcontainerShell) Up() error {
 		return errors.New("failed to run `devcontainer up`")
 	}
 
-	if d.injectBin != "" {
-		// TODO skip if Unnecessary.
-		DockerCp(d.dockerPath, d.injectBin, o.ContainerId, "/opt/devcontainer-shell/devcontainer-shell")
-	}
-
 	d.devcontainerUpOutput = o
 	d.containerCwd = filepath.Join(o.RemoteWorkspaceFolder, rel)
 

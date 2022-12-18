@@ -14,6 +14,7 @@ func init() {
 	setupExecCmd(rootCmd)
 
 	rootCmd.AddCommand(execCmd)
+	rootCmd.AddCommand(forwardPortCmd)
 }
 
 func Execute() error {

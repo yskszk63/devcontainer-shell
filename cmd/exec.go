@@ -42,7 +42,7 @@ var execCmd = &cobra.Command {
 
 func setupExecCmd(c *cobra.Command) {
 	c.Flags().StringVarP(&shell, "shell", "s", "bash", "using shell program")
-	c.Flags().BoolVarP(&noInject, "no inject", "I", false, "no inject self")
+	c.Flags().BoolVarP(&noInject, "no inject", "I", false, "no inject agent")
 }
 
 func init() {
