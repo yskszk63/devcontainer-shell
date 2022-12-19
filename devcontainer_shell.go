@@ -126,6 +126,7 @@ func (d *DevcontainerShell) Exec(prog string) error {
 		containerId: d.devcontainerUpOutput.ContainerId,
 		bin:         prog,
 		cwd:         d.containerCwd,
+		user:        d.devcontainerUpOutput.RemoteUser,
 	}
 	return d.docker.run(dockerExec)
 }
