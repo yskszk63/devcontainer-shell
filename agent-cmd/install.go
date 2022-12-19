@@ -2,7 +2,6 @@ package agentcmd
 
 import (
 	"io"
-	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -11,28 +10,31 @@ import (
 var installCmd = &cobra.Command {
 	Use: "install [dest]",
 	Args: cobra.MinimumNArgs(1),
-	Run: func(c *cobra.Command, args []string) {
+	SilenceErrors: true,
+	SilenceUsage: true,
+	RunE: func(c *cobra.Command, args []string) error{
 		dest := args[0]
 
 		me, err := os.Executable()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		fp, err := os.OpenFile(dest, os.O_CREATE | os.O_WRONLY | os.O_TRUNC, 0o755)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		defer fp.Close()
 
 		mefp, err := os.Open(me)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		defer mefp.Close()
 
 		if _, err := io.Copy(fp, mefp); err != nil {
-			log.Fatal(err)
+			return err
 		}
+		return nil
 	},
 }

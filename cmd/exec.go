@@ -1,11 +1,14 @@
 package cmd
 
 import (
-	"log"
+	"errors"
+	"fmt"
 	"os"
 	osexec "os/exec"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 
 	"github.com/yskszk63/devcontainer-shell"
 )
@@ -14,46 +17,73 @@ var shell string
 var noInject bool
 var noForwardport bool
 
-func exec(cmd *cobra.Command, args []string) {
+func exec(cmd *cobra.Command, args []string) error {
 	ds := new(devcontainershell.DevcontainerShell)
 
 	if !noInject {
-		self, err := os.Executable() // TODO REMOVE
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := ds.Inject(self); err != nil {
-			log.Fatal(err)
+		if err := ds.Inject(); err != nil {
+			return err
 		}
 	}
 
 	if err := ds.Up(); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if !noForwardport {
 		if noInject {
-			log.Fatal("err...") // TODO
+			return errors.New("err...") // TODO
 		}
 
 		self, err := os.Executable() // TODO REMOVE
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-		proc := osexec.Command(self, "forwardport", ds.ContainerId())
+
+		args := []string{
+			"forwardport",
+			ds.ContainerId(),
+		}
+		if debug {
+			// no daemon
+			args = append(args, "-D", "-d")
+		}
+
+		if zap.L().Level().Enabled(zap.DebugLevel) {
+			zap.L().Debug(fmt.Sprintf("%s %s", self, strings.Join(args, " ")))
+		}
+
+		proc := osexec.Command(self, args...)
 		proc.Stdin = nil
-		proc.Start()
+		proc.Stdout = os.Stdout
+		proc.Stderr = os.Stderr
+		if err := proc.Start(); err != nil {
+			return err
+		}
+
+		if debug {
+			defer func() {
+				if proc.Process == nil {
+					return
+				}
+				proc.Process.Kill()
+			}()
+		}
 	}
 
 	if err := ds.Exec(shell); err != nil {
-		log.Fatal()
+		return err
 	}
+
+	return nil
 }
 
 var execCmd = &cobra.Command {
 	Use: "exec",
 	Short: "execute shell on devcontainer",
-	Run: exec,
+	SilenceErrors: true,
+	SilenceUsage: true,
+	RunE: exec,
 }
 
 func setupExecCmd(c *cobra.Command) {
