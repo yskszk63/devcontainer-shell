@@ -1,11 +1,13 @@
 package cmd
 
 import (
-	"log"
+	"fmt"
 	"os"
 	osexec "os/exec"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 
 	"github.com/yskszk63/devcontainer-shell"
 )
@@ -18,7 +20,16 @@ func daemonize(container string) error {
 		return err
 	}
 
-	proc := osexec.Command(me, "forwardport", container, "-D")
+	args := []string{
+		"forwardport",
+		container,
+		"-D",
+	}
+	if zap.L().Level().Enabled(zap.DebugLevel) {
+		zap.L().Debug(fmt.Sprintf("%s %s", me, strings.Join(args, " ")))
+	}
+
+	proc := osexec.Command(me, args...)
 	proc.Stdin = nil
 	proc.Stdout = nil
 	proc.Stderr = nil
@@ -30,25 +41,29 @@ func daemonize(container string) error {
 	return nil
 }
 
-func forwardPort(cmd *cobra.Command, args []string) {
+func forwardPort(cmd *cobra.Command, args []string) error {
 	container := args[0]
 
 	if !nodaemon {
 		if err := daemonize(container); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
 	if err := devcontainershell.ForwardPort(container); err != nil {
-		log.Fatal(err)
+		return err
 	}
+
+	return nil
 }
 
 var forwardPortCmd = &cobra.Command {
 	Use: "forwardport [container id]",
 	Short: "port forward",
 	Args: cobra.MinimumNArgs(1),
-	Run: forwardPort,
+	SilenceErrors: true,
+	SilenceUsage: true,
+	RunE: forwardPort,
 }
 
 func init() {

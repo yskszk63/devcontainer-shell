@@ -3,9 +3,13 @@ package devcontainershell
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
+
+	"go.uber.org/zap"
 )
 
 type buildArgs interface {
@@ -30,6 +34,9 @@ func (d *docker) run(input buildArgs) error {
 		return err
 	}
 
+	if zap.L().Core().Enabled(zap.DebugLevel) {
+		zap.L().Debug(fmt.Sprintf("%s %s", *d, strings.Join(args, " ")))
+	}
 	proc := exec.Command(string(*d), args...)
 	proc.Stdin = os.Stdin
 	proc.Stdout = os.Stdout
@@ -44,6 +51,9 @@ func (d *docker) runWithPipe(input buildArgs, stdin io.Reader, stdout io.Writer)
 		return err
 	}
 
+	if zap.L().Core().Enabled(zap.DebugLevel) {
+		zap.L().Debug(fmt.Sprintf("%s %s", *d, strings.Join(args, " ")))
+	}
 	proc := exec.Command(string(*d), args...)
 	proc.Stdin = stdin
 	proc.Stdout = stdout
@@ -58,6 +68,9 @@ func (d *docker) runWithParse(input buildArgs, output any) error {
 		return err
 	}
 
+	if zap.L().Core().Enabled(zap.DebugLevel) {
+		zap.L().Debug(fmt.Sprintf("%s %s", *d, strings.Join(args, " ")))
+	}
 	proc := exec.Command(string(*d), args...)
 	proc.Stdin = os.Stdin
 	proc.Stderr = os.Stderr

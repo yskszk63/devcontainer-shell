@@ -2,7 +2,6 @@ package agentcmd
 
 import (
 	"context"
-	"log"
 	"os"
 
 	"github.com/yskszk63/devcontainer-shell"
@@ -12,7 +11,9 @@ import (
 
 var watchListensCmd = &cobra.Command {
 	Use: "watch-listens",
-	Run: func(c *cobra.Command, args []string) {
+	SilenceErrors: true,
+	SilenceUsage: true,
+	RunE: func(c *cobra.Command, args []string) error {
 		cx, cancel := context.WithCancel(context.Background())
 
 		go func() {
@@ -29,7 +30,8 @@ var watchListensCmd = &cobra.Command {
 
 		err := devcontainershell.WatchListens(cx)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
+		return nil
 	},
 }

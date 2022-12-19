@@ -15,7 +15,7 @@ type DevcontainerShell struct {
 	docker               *docker
 	devcontainerPath     string
 	containerCwd         string
-	injectBin            string
+	inject               bool
 }
 
 func (d *DevcontainerShell) ContainerId() string {
@@ -60,7 +60,7 @@ func (d *DevcontainerShell) ensureResolvePaths() error {
 	return nil
 }
 
-func (d *DevcontainerShell) Inject(self string) error {
+func (d *DevcontainerShell) Inject() error {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -72,7 +72,7 @@ func (d *DevcontainerShell) Inject(self string) error {
 		return err
 	}
 
-	d.injectBin = self
+	d.inject = true
 	return nil
 }
 
@@ -96,7 +96,7 @@ func (d *DevcontainerShell) Up() error {
 	}
 
 	mounts := make([]string, 0)
-	if d.injectBin != "" {
+	if d.inject {
 		mounts = append(mounts, fmt.Sprintf("type=volume,source=devcontainer-shell,target=/opt/devcontainer-shell"))
 	}
 	o, err := DevcontainerUp(DevcontainerUpInput{

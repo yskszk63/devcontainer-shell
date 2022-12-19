@@ -6,8 +6,8 @@ import (
 
 var rootCmd = &cobra.Command {
 	Use: "devcontainer-shell-agent",
-	Run: func(c *cobra.Command, args []string) {
-	},
+	SilenceErrors: true,
+	SilenceUsage: true,
 }
 
 func init() {
