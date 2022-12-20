@@ -1,0 +1,226 @@
+[
+    {
+        "Id": "c5dc3bd2ca3fd9edc4124d5977ccfcbba8483576a0b32db42a062d9779072d81",
+        "Created": "2022-12-20T13:19:31.085279508Z",
+        "Path": "/bin/sh",
+        "Args": [
+            "-c",
+            "echo Container started\ntrap \"exit 0\" 15\n\nexec \"$@\"\nwhile sleep 1 & wait $!; do :; done",
+            "-"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 44543,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2022-12-20T13:19:31.39427985Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:a76526be39d648c33df0c08f023fdff8e1f11fbeed4a1c288f3fa628334192d6",
+        "ResolvConfPath": "/var/lib/docker/containers/c5dc3bd2ca3fd9edc4124d5977ccfcbba8483576a0b32db42a062d9779072d81/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/c5dc3bd2ca3fd9edc4124d5977ccfcbba8483576a0b32db42a062d9779072d81/hostname",
+        "HostsPath": "/var/lib/docker/containers/c5dc3bd2ca3fd9edc4124d5977ccfcbba8483576a0b32db42a062d9779072d81/hosts",
+        "LogPath": "/var/lib/docker/containers/c5dc3bd2ca3fd9edc4124d5977ccfcbba8483576a0b32db42a062d9779072d81/c5dc3bd2ca3fd9edc4124d5977ccfcbba8483576a0b32db42a062d9779072d81-json.log",
+        "Name": "/inspiring_heisenberg",
+        "RestartCount": 0,
+        "Driver": "btrfs",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": null,
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "default",
+            "PortBindings": {},
+            "RestartPolicy": {
+                "Name": "no",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": [],
+            "DnsOptions": [],
+            "DnsSearch": [],
+            "ExtraHosts": null,
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": [],
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": [],
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "KernelMemory": 0,
+            "KernelMemoryTCP": 0,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "Mounts": [
+                {
+                    "Type": "bind",
+                    "Source": "/home/yskszk63/work/devcontainer-shell",
+                    "Target": "/workspaces/devcontainer-shell"
+                }
+            ],
+            "MaskedPaths": [
+                "/proc/asound",
+                "/proc/acpi",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/sys/firmware"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "GraphDriver": {
+            "Data": null,
+            "Name": "btrfs"
+        },
+        "Mounts": [
+            {
+                "Type": "bind",
+                "Source": "/home/yskszk63/work/devcontainer-shell",
+                "Destination": "/workspaces/devcontainer-shell",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            }
+        ],
+        "Config": {
+            "Hostname": "c5dc3bd2ca3f",
+            "Domainname": "",
+            "User": "root",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "PATH=/usr/local/share/nvm/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "NVM_DIR=/usr/local/share/nvm",
+                "NVM_SYMLINK_CURRENT=true"
+            ],
+            "Cmd": [
+                "-c",
+                "echo Container started\ntrap \"exit 0\" 15\n\nexec \"$@\"\nwhile sleep 1 & wait $!; do :; done",
+                "-"
+            ],
+            "Image": "vsc-simple-fbc81f1d16c67deaf101e7e4d8743def-features-uid",
+            "Volumes": null,
+            "WorkingDir": "",
+            "Entrypoint": [
+                "/bin/sh"
+            ],
+            "OnBuild": null,
+            "Labels": {
+                "dev.containers.id": "base-debian",
+                "dev.containers.release": "v0.2.26",
+                "dev.containers.source": "https://github.com/devcontainers/images",
+                "dev.containers.timestamp": "Tue, 29 Nov 2022 19:50:09 GMT",
+                "dev.containers.variant": "bullseye",
+                "devcontainer.local_folder": "/home/yskszk63/work/devcontainer-shell/example/simple",
+                "devcontainer.metadata": "[ {\"id\":\"ghcr.io/devcontainers/features/common-utils:1\"}, {\"id\":\"ghcr.io/devcontainers/features/git:1\"}, {\"remoteUser\":\"vscode\"}, {\"id\":\"ghcr.io/devcontainers/features/node:1\",\"customizations\":{\"vscode\":{\"extensions\":[\"dbaeumer.vscode-eslint\"]}}} ]",
+                "version": "0.203.1"
+            }
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "11afc899989c90c07126c105645d8052bfa40d4afd4c324eb362ea5757bd10cf",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": {},
+            "SandboxKey": "/var/run/docker/netns/11afc899989c",
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "e2958b448025ec0cee1029a1fb7ffa6988b23f143115bdcf991506c61e26763a",
+            "Gateway": "172.17.0.1",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "172.17.0.2",
+            "IPPrefixLen": 16,
+            "IPv6Gateway": "",
+            "MacAddress": "02:42:ac:11:00:02",
+            "Networks": {
+                "bridge": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": null,
+                    "NetworkID": "c0e972e75e8406361927d8d2e6deab042c750a7a163e2cc09e469d44f4eaf247",
+                    "EndpointID": "e2958b448025ec0cee1029a1fb7ffa6988b23f143115bdcf991506c61e26763a",
+                    "Gateway": "172.17.0.1",
+                    "IPAddress": "172.17.0.2",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:11:00:02",
+                    "DriverOpts": null
+                }
+            }
+        }
+    }
+]
