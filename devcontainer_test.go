@@ -46,7 +46,7 @@ func TestResolveWorkspaceFolder(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			fsys := os.DirFS(test.root)
-			wf, rel, err := ResolveWorkspaceFolder(fsys, test.dir)
+			wf, rel, err := resolveWorkspaceFolder(fsys, test.dir)
 			if err != nil {
 				if err.Error() != test.err {
 					t.Fatal(err)
