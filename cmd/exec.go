@@ -16,9 +16,13 @@ import (
 var shell string
 var noInject bool
 var noForwardport bool
+var rebuild bool
 
 func exec(cmd *cobra.Command, args []string) error {
 	ds := new(devcontainershell.DevcontainerShell)
+	if rebuild {
+		ds.Rebuild = true
+	}
 
 	if !noInject {
 		if err := ds.Inject(); err != nil {
@@ -90,6 +94,7 @@ func setupExecCmd(c *cobra.Command) {
 	c.Flags().StringVarP(&shell, "shell", "s", "bash", "using shell program")
 	c.Flags().BoolVarP(&noInject, "no-inject", "I", false, "no inject agent")
 	c.Flags().BoolVarP(&noForwardport, "no-forward", "F", false, "no foward port")
+	c.Flags().BoolVarP(&rebuild, "rebuild", "b", false, "remove existing container")
 }
 
 func init() {
