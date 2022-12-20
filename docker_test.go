@@ -1,6 +1,8 @@
 package devcontainershell
 
 import (
+	"encoding/json"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -50,6 +52,26 @@ func TestDockerExec(t *testing.T) {
 
 			if !reflect.DeepEqual(got, test.wants) {
 				t.Errorf("%#v != %#v", got, test.wants)
+			}
+		})
+	}
+}
+
+func TestDockerContainerInspectOutput(t *testing.T) {
+	tests := []string{
+		"./testdata/docker-inspect/simple.json",
+		"./testdata/docker-inspect/compose.json",
+	}
+
+	for _, test := range tests {
+		t.Run(test, func(t *testing.T) {
+			var o []dockerContainerInspectOutput
+			b, err := os.ReadFile(test)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal(b, &o); err != nil {
+				t.Fatal(err)
 			}
 		})
 	}

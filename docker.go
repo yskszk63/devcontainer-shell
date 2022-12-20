@@ -181,7 +181,13 @@ func (d dockerContainerInspect) buildArgs() ([]string, error) {
 }
 
 type dockerContainerInspectOutput struct {
+	Config struct {
+		Labels map[string]string
+	}
 	NetworkSettings struct {
 		IPAddress string
+		Networks  map[string]struct {
+			IPAddress string
+		}
 	}
 }

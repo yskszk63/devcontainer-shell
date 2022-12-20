@@ -108,6 +108,25 @@ func listen(cx context.Context, addr string, port uint16) error {
 	}
 }
 
+func detectIPAddress(o *dockerContainerInspectOutput) (string, error) {
+	if o.NetworkSettings.IPAddress != "" {
+		return o.NetworkSettings.IPAddress, nil
+	}
+
+	// try use compose default network
+	pname, exists := o.Config.Labels["com.docker.compose.project"]
+	if !exists {
+		return "", errors.New("Could not detect ip address.")
+	}
+
+	nname := fmt.Sprintf("%s_default", pname)
+	nw, exists := o.NetworkSettings.Networks[nname]
+	if !exists || nw.IPAddress == "" {
+		return "", errors.New("Could not detect ip address..")
+	}
+	return nw.IPAddress, nil
+}
+
 func localJob(cx context.Context, stdin *io.PipeWriter, stdout *io.PipeReader, container string) error {
 	defer stdin.Close()
 	defer stdout.Close()
@@ -127,7 +146,10 @@ func localJob(cx context.Context, stdin *io.PipeWriter, stdout *io.PipeReader, c
 	if len(inspect) < 1 {
 		return errors.New("no result found.")
 	}
-	addr := inspect[0].NetworkSettings.IPAddress
+	addr, err := detectIPAddress(&inspect[0])
+	if err != nil {
+		return err
+	}
 
 	listens := make(map[uint16]context.CancelFunc)
 	dec := json.NewDecoder(stdout)
