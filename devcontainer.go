@@ -3,13 +3,17 @@ package devcontainershell
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+
+	"go.uber.org/zap"
 )
 
-func ResolveWorkspaceFolder(fsys fs.FS, cwd string) (string, string, error) {
+func resolveWorkspaceFolder(fsys fs.FS, cwd string) (string, string, error) {
 	wf := cwd
 	rel := ""
 
@@ -31,44 +35,48 @@ func ResolveWorkspaceFolder(fsys fs.FS, cwd string) (string, string, error) {
 	}
 }
 
-type DevcontainerUpInput struct {
-	Bin             string
-	WorkspaceFolder string
-	Mounts          []string
+type devcontainerUpInput struct {
+	bin             string
+	workspaceFolder string
+	mounts          []string
 }
 
-func (d *DevcontainerUpInput) buildArgs() ([]string, error) {
-	if d.WorkspaceFolder == "" {
+func (d *devcontainerUpInput) buildArgs() ([]string, error) {
+	if d.workspaceFolder == "" {
 		return nil, errors.New("WorkspaceFolder must set.")
 	}
 
 	ret := []string{
 		"up",
 		"--workspace-folder",
-		d.WorkspaceFolder,
+		d.workspaceFolder,
 	}
 
-	for _, mount := range d.Mounts {
+	for _, mount := range d.mounts {
 		ret = append(ret, "--mount", mount)
 	}
 
 	return ret, nil
 }
 
-type DevcontainerUpOutput struct {
+type devcontainerUpOutput struct {
 	Outcome               string `json:"outcome"`
 	ContainerId           string `json:"containerId"`
 	RemoteUser            string `json:"remoteUser"`
 	RemoteWorkspaceFolder string `json:"remoteWorkspaceFolder"`
 }
 
-func DevcontainerUp(input DevcontainerUpInput) (*DevcontainerUpOutput, error) {
+func devcontainerUp(input devcontainerUpInput) (*devcontainerUpOutput, error) {
 	args, err := input.buildArgs()
 	if err != nil {
 		return nil, err
 	}
 
-	proc := exec.Command(input.Bin, args...)
+	if zap.L().Level().Enabled(zap.DebugLevel) {
+		zap.L().Debug(fmt.Sprintf("%s %s", input.bin, strings.Join(args, " ")))
+	}
+
+	proc := exec.Command(input.bin, args...)
 	proc.Stdin = nil
 	proc.Stderr = os.Stderr
 
@@ -77,7 +85,7 @@ func DevcontainerUp(input DevcontainerUpInput) (*DevcontainerUpOutput, error) {
 		return nil, err
 	}
 
-	var o DevcontainerUpOutput
+	var o devcontainerUpOutput
 	if err := json.Unmarshal(raw, &o); err != nil {
 		return nil, err
 	}

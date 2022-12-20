@@ -11,7 +11,7 @@ import (
 
 type DevcontainerShell struct {
 	mutex                sync.Mutex
-	devcontainerUpOutput *DevcontainerUpOutput
+	devcontainerUpOutput *devcontainerUpOutput
 	docker               *docker
 	devcontainerPath     string
 	containerCwd         string
@@ -90,19 +90,19 @@ func (d *DevcontainerShell) Up() error {
 		return err
 	}
 
-	wf, rel, err := ResolveWorkspaceFolder(root, cwd)
+	wf, rel, err := resolveWorkspaceFolder(root, cwd)
 	if err != nil {
 		return err
 	}
 
 	mounts := make([]string, 0)
 	if d.inject {
-		mounts = append(mounts, fmt.Sprintf("type=volume,source=devcontainer-shell,target=/opt/devcontainer-shell"))
+		mounts = append(mounts, fmt.Sprintf("type=volume,source=devcontainer-shell,target=/opt/devcontainer-shell,external=true"))
 	}
-	o, err := DevcontainerUp(DevcontainerUpInput{
-		Bin:             d.devcontainerPath,
-		WorkspaceFolder: wf,
-		Mounts:          mounts,
+	o, err := devcontainerUp(devcontainerUpInput{
+		bin:             d.devcontainerPath,
+		workspaceFolder: wf,
+		mounts:          mounts,
 	})
 	if err != nil {
 		return err
