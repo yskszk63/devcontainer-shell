@@ -39,6 +39,7 @@ type devcontainerUpInput struct {
 	bin             string
 	workspaceFolder string
 	mounts          []string
+	rebuild         bool
 }
 
 func (d *devcontainerUpInput) buildArgs() ([]string, error) {
@@ -54,6 +55,10 @@ func (d *devcontainerUpInput) buildArgs() ([]string, error) {
 
 	for _, mount := range d.mounts {
 		ret = append(ret, "--mount", mount)
+	}
+
+	if d.rebuild {
+		ret = append(ret, "--remove-existing-container")
 	}
 
 	return ret, nil

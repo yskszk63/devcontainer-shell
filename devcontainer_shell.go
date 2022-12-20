@@ -16,6 +16,7 @@ type DevcontainerShell struct {
 	devcontainerPath     string
 	containerCwd         string
 	inject               bool
+	Rebuild              bool
 }
 
 func (d *DevcontainerShell) ContainerId() string {
@@ -103,6 +104,7 @@ func (d *DevcontainerShell) Up() error {
 		bin:             d.devcontainerPath,
 		workspaceFolder: wf,
 		mounts:          mounts,
+		rebuild:         d.Rebuild,
 	})
 	if err != nil {
 		return err
