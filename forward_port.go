@@ -8,9 +8,11 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/netip"
 	"os"
 	"os/signal"
 
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -151,7 +153,9 @@ func localJob(cx context.Context, stdin *io.PipeWriter, stdout *io.PipeReader, c
 		return err
 	}
 
-	listens := make(map[uint16]context.CancelFunc)
+	ports := make(map[uint16]struct{})
+
+	listens := make(map[netip.AddrPort]context.CancelFunc)
 	dec := json.NewDecoder(stdout)
 	for {
 		select {
@@ -169,18 +173,30 @@ func localJob(cx context.Context, stdin *io.PipeWriter, stdout *io.PipeReader, c
 			return err
 		}
 
-		if event.IP != "0.0.0.0" {
+		addrPort, err := event.addrPort()
+		if err != nil {
+			zap.L().Warn(err.Error())
+			continue
+		}
+
+		if addrPort.Addr().IsLoopback() {
 			continue // TODO
 		}
-		port := event.Port
 
 		switch event.Type {
 		case "ADD":
 			{
+				_, exists := ports[addrPort.Port()]
+				if exists {
+					// 0.0.0.0 vs ::
+					continue
+				}
+
 				cx, cancel := context.WithCancel(cx)
-				listens[port] = cancel
+				listens[addrPort] = cancel
+				ports[addrPort.Port()] = struct{}{}
 				go func() {
-					if err := listen(cx, addr, port); err != nil {
+					if err := listen(cx, addr, addrPort.Port()); err != nil {
 						log.Fatal(err)
 					}
 				}()
@@ -188,12 +204,13 @@ func localJob(cx context.Context, stdin *io.PipeWriter, stdout *io.PipeReader, c
 
 		case "REMOVE":
 			{
-				cancel, exists := listens[port]
+				cancel, exists := listens[addrPort]
 				if !exists {
 					continue
 				}
 
-				delete(listens, port)
+				delete(listens, addrPort)
+				delete(ports, addrPort.Port())
 				cancel()
 			}
 		}
