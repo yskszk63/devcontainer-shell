@@ -17,6 +17,14 @@ type ListenEvent struct {
 	Port uint16 `json:"port"`
 }
 
+func (l *ListenEvent) addrPort() (netip.AddrPort, error) {
+	addr, err := netip.ParseAddr(l.IP)
+	if err != nil {
+		return netip.AddrPort{}, err
+	}
+	return netip.AddrPortFrom(addr, l.Port), nil
+}
+
 func update(m *map[netip.AddrPort]struct{}) ([]netip.AddrPort, []netip.AddrPort, error) {
 	l, err := netlinklistlistens.ListListens()
 	if err != nil {
