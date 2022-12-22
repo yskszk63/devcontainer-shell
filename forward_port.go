@@ -142,7 +142,7 @@ func localJob(cx context.Context, stdin *io.PipeWriter, stdout *io.PipeReader, c
 	}
 
 	var inspect []dockerContainerInspectOutput
-	if err := docker.runWithParse(dockerContainerInspect(container), &inspect); err != nil {
+	if err := docker.runWithParse(dockerContainerInspect([]string{container}), &inspect); err != nil {
 		return err
 	}
 	if len(inspect) < 1 {
