@@ -170,17 +170,26 @@ func (d dockerVolumeCreate) buildArgs() ([]string, error) {
 	}, nil
 }
 
-type dockerContainerInspect string
+type dockerContainerInspect []string
 
 func (d dockerContainerInspect) buildArgs() ([]string, error) {
-	return []string{
+	if d == nil {
+		return nil, errors.New("Must not nil.")
+	}
+
+	args := []string{
 		"container",
 		"inspect",
-		string(d),
-	}, nil
+	}
+	for _, c := range d {
+		args = append(args, c)
+	}
+
+	return args, nil
 }
 
 type dockerContainerInspectOutput struct {
+	Id     string
 	Config struct {
 		Labels map[string]string
 	}
@@ -190,4 +199,57 @@ type dockerContainerInspectOutput struct {
 			IPAddress string
 		}
 	}
+}
+
+type dockerPs struct {
+	filter []string
+	quiet  bool
+}
+
+func (d dockerPs) buildArgs() ([]string, error) {
+	args := []string{
+		"ps",
+	}
+
+	if d.filter != nil {
+		for _, f := range d.filter {
+			args = append(args, "-f", f)
+		}
+	}
+
+	if d.quiet {
+		args = append(args, "-q")
+	}
+
+	return args, nil
+}
+
+type dockerKill []string
+
+func (d dockerKill) buildArgs() ([]string, error) {
+	args := []string{
+		"kill",
+	}
+
+	args = append(args, []string(d)...)
+
+	return args, nil
+}
+
+type dockerComposeKill struct {
+	project *string
+}
+
+func (d dockerComposeKill) buildArgs() ([]string, error) {
+	args := []string{
+		"compose",
+	}
+
+	if d.project != nil {
+		args = append(args, "-p", *d.project)
+	}
+
+	args = append(args, "kill")
+
+	return args, nil
 }
