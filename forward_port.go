@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/netip"
 	"os"
@@ -104,7 +103,7 @@ func listen(cx context.Context, addr string, port uint16) error {
 			defer sock.Close()
 
 			if err := forward(cx, addr, port, sock); err != nil {
-				log.Println(err)
+				zap.L().Warn(err.Error())
 			}
 		}()
 	}
@@ -197,7 +196,7 @@ func localJob(cx context.Context, stdin *io.PipeWriter, stdout *io.PipeReader, c
 				ports[addrPort.Port()] = struct{}{}
 				go func() {
 					if err := listen(cx, addr, addrPort.Port()); err != nil {
-						log.Fatal(err)
+						zap.L().Warn(err.Error())
 					}
 				}()
 			}
