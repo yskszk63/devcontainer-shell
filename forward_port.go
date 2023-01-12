@@ -10,6 +10,7 @@ import (
 	"net/netip"
 	"os"
 	"os/signal"
+	"sync"
 
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -56,32 +57,42 @@ func remoteJob(cx context.Context, stdin *io.PipeReader, stdout *io.PipeWriter, 
 	return docker.runWithPipe(exec, stdin, stdout)
 }
 
-func forward(cx context.Context, addr string, port uint16, sock net.Conn) error {
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", addr, port))
+func forward(cx context.Context, conn, sock *net.TCPConn) error {
+	wg := sync.WaitGroup{}
+
+	pairs := []struct {
+		w *net.TCPConn
+		r *net.TCPConn
+	}{
+		{conn, sock},
+		{sock, conn},
+	}
+
+	for _, pair := range pairs {
+		w := pair.w
+		r := pair.r
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			defer w.CloseWrite()
+			defer w.CloseRead()
+
+			_, _ = io.Copy(w, r)
+		}()
+	}
+
+	wg.Wait()
+	return nil
+}
+
+func listen(cx context.Context, addr string, port uint16) error {
+	raddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", addr, port))
 	if err != nil {
 		return err
 	}
 
-	g, cx := errgroup.WithContext(cx)
-
-	g.Go(func() error {
-		if _, err := io.Copy(conn, sock); err != nil {
-			return err
-		}
-		return nil
-	})
-	g.Go(func() error {
-		if _, err := io.Copy(sock, conn); err != nil {
-			return err
-		}
-		return nil
-	})
-
-	return g.Wait()
-}
-
-func listen(cx context.Context, addr string, port uint16) error {
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	l, err := net.ListenTCP("tcp", &net.TCPAddr{IP: net.IPv4zero, Port: int(port)})
 	if err != nil {
 		return err
 	}
@@ -93,7 +104,7 @@ func listen(cx context.Context, addr string, port uint16) error {
 	}()
 
 	for {
-		sock, err := l.Accept()
+		sock, err := l.AcceptTCP()
 		if err != nil {
 			fmt.Println(err)
 			return nil
@@ -102,7 +113,14 @@ func listen(cx context.Context, addr string, port uint16) error {
 		go func() {
 			defer sock.Close()
 
-			if err := forward(cx, addr, port, sock); err != nil {
+			conn, err := net.DialTCP("tcp", nil, raddr)
+			if err != nil {
+				zap.L().Warn(err.Error())
+				return
+			}
+			defer conn.Close()
+
+			if err := forward(cx, conn, sock); err != nil {
 				zap.L().Warn(err.Error())
 			}
 		}()
