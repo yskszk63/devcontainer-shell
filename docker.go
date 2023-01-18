@@ -222,6 +222,11 @@ type dockerContainerInspectOutput struct {
 	Config struct {
 		Labels map[string]string
 	}
+	Mounts []struct {
+		Type        string
+		Name        string
+		Destination string
+	}
 	NetworkSettings struct {
 		IPAddress string
 		Networks  map[string]struct {

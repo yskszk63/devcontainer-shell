@@ -114,6 +114,12 @@ func (d *DevcontainerShell) Up() error {
 		return errors.New("failed to run `devcontainer up`")
 	}
 
+	if d.PortForward {
+		if err := tryRunForwardServer(d.docker, o); err != nil {
+			return err
+		}
+	}
+
 	d.devcontainerUpOutput = o
 	d.containerCwd = filepath.Join(o.RemoteWorkspaceFolder, rel)
 
