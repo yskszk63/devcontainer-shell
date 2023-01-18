@@ -25,7 +25,6 @@ func init() {
 	setupExecCmd(rootCmd)
 
 	rootCmd.AddCommand(execCmd)
-	rootCmd.AddCommand(forwardPortCmd)
 	rootCmd.AddCommand(killCmd)
 
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Debug")

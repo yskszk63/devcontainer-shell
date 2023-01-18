@@ -45,6 +45,23 @@ func (d *docker) run(input buildArgs) error {
 	return proc.Run()
 }
 
+func (d *docker) runSilently(input buildArgs, ignoreStderr bool) error {
+	args, err := input.buildArgs()
+	if err != nil {
+		return err
+	}
+
+	if zap.L().Core().Enabled(zap.DebugLevel) {
+		zap.L().Debug(fmt.Sprintf("%s %s", *d, strings.Join(args, " ")))
+	}
+	proc := exec.Command(string(*d), args...)
+	if !ignoreStderr {
+		proc.Stderr = os.Stderr
+	}
+
+	return proc.Run()
+}
+
 func (d *docker) runWithPipe(input buildArgs, stdin io.Reader, stdout io.Writer) error {
 	args, err := input.buildArgs()
 	if err != nil {
@@ -91,6 +108,9 @@ type dockerRunRm struct {
 	image  string
 	mounts []string
 	cmd    []string
+	name   string
+	net    string
+	detach bool
 }
 
 func (d dockerRunRm) buildArgs() ([]string, error) {
@@ -106,6 +126,15 @@ func (d dockerRunRm) buildArgs() ([]string, error) {
 		for _, m := range d.mounts {
 			args = append(args, "--mount", m)
 		}
+	}
+	if d.name != "" {
+		args = append(args, "--name", d.name)
+	}
+	if d.net != "" {
+		args = append(args, "--net", d.net)
+	}
+	if d.detach {
+		args = append(args, "--detach")
 	}
 	args = append(args, d.image)
 	if d.cmd != nil {
@@ -160,16 +189,6 @@ func (d dockerExec) buildArgs() ([]string, error) {
 	return args, nil
 }
 
-type dockerVolumeCreate string
-
-func (d dockerVolumeCreate) buildArgs() ([]string, error) {
-	return []string{
-		"volume",
-		"create",
-		string(d),
-	}, nil
-}
-
 type dockerContainerInspect []string
 
 func (d dockerContainerInspect) buildArgs() ([]string, error) {
@@ -193,11 +212,10 @@ type dockerContainerInspectOutput struct {
 	Config struct {
 		Labels map[string]string
 	}
-	NetworkSettings struct {
-		IPAddress string
-		Networks  map[string]struct {
-			IPAddress string
-		}
+	Mounts []struct {
+		Type        string
+		Name        string
+		Destination string
 	}
 }
 
