@@ -189,16 +189,6 @@ func (d dockerExec) buildArgs() ([]string, error) {
 	return args, nil
 }
 
-type dockerVolumeCreate string
-
-func (d dockerVolumeCreate) buildArgs() ([]string, error) {
-	return []string{
-		"volume",
-		"create",
-		string(d),
-	}, nil
-}
-
 type dockerContainerInspect []string
 
 func (d dockerContainerInspect) buildArgs() ([]string, error) {
@@ -226,12 +216,6 @@ type dockerContainerInspectOutput struct {
 		Type        string
 		Name        string
 		Destination string
-	}
-	NetworkSettings struct {
-		IPAddress string
-		Networks  map[string]struct {
-			IPAddress string
-		}
 	}
 }
 
