@@ -2,11 +2,12 @@ package devcontainershell
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
+
+	"go.uber.org/zap"
 )
 
 type DevcontainerShell struct {
@@ -15,8 +16,8 @@ type DevcontainerShell struct {
 	docker               *docker
 	devcontainerPath     string
 	containerCwd         string
-	inject               bool
 	Rebuild              bool
+	PortForward          bool
 }
 
 func (d *DevcontainerShell) ContainerId() string {
@@ -61,22 +62,6 @@ func (d *DevcontainerShell) ensureResolvePaths() error {
 	return nil
 }
 
-func (d *DevcontainerShell) Inject() error {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
-	if err := d.ensureResolvePaths(); err != nil {
-		return err
-	}
-
-	if err := d.docker.run(dockerVolumeCreate("devcontainer-shell")); err != nil {
-		return err
-	}
-
-	d.inject = true
-	return nil
-}
-
 func (d *DevcontainerShell) Up() error {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
@@ -96,15 +81,31 @@ func (d *DevcontainerShell) Up() error {
 		return err
 	}
 
-	mounts := make([]string, 0)
-	if d.inject {
-		mounts = append(mounts, fmt.Sprintf("type=volume,source=devcontainer-shell,target=/opt/devcontainer-shell,external=true"))
+	var additionalFeatures map[string]interface{}
+	if d.PortForward {
+		err := d.docker.runSilently(dockerRunRm{
+			image:  "ghcr.io/yskszk63/devcontainer-portforward-server",
+			name:   "devcontainer-shell-portforward",
+			mounts: []string{"type=volume,source=devcontainer-portforward,target=/data"},
+			net:    "host",
+			detach: true,
+		}, !zap.L().Level().Enabled(zap.DebugLevel))
+		if err != nil {
+			_, known := err.(*exec.ExitError)
+			if !known {
+				return err
+			}
+		}
+		additionalFeatures = map[string]interface{}{
+			"ghcr.io/yskszk63/devcontainer-portforward/devcontainer-portforward:0": struct{}{},
+		}
 	}
+
 	o, err := devcontainerUp(devcontainerUpInput{
-		bin:             d.devcontainerPath,
-		workspaceFolder: wf,
-		mounts:          mounts,
-		rebuild:         d.Rebuild,
+		bin:                d.devcontainerPath,
+		workspaceFolder:    wf,
+		rebuild:            d.Rebuild,
+		additionalFeatures: additionalFeatures,
 	})
 	if err != nil {
 		return err
