@@ -45,23 +45,6 @@ func (d *docker) run(input buildArgs) error {
 	return proc.Run()
 }
 
-func (d *docker) runSilently(input buildArgs, ignoreStderr bool) error {
-	args, err := input.buildArgs()
-	if err != nil {
-		return err
-	}
-
-	if zap.L().Core().Enabled(zap.DebugLevel) {
-		zap.L().Debug(fmt.Sprintf("%s %s", *d, strings.Join(args, " ")))
-	}
-	proc := exec.Command(string(*d), args...)
-	if !ignoreStderr {
-		proc.Stderr = os.Stderr
-	}
-
-	return proc.Run()
-}
-
 func (d *docker) runWithPipe(input buildArgs, stdin io.Reader, stdout io.Writer) error {
 	args, err := input.buildArgs()
 	if err != nil {
@@ -102,45 +85,6 @@ func (d *docker) runWithParse(input buildArgs, output any) error {
 	}
 
 	return nil
-}
-
-type dockerRunRm struct {
-	image  string
-	mounts []string
-	cmd    []string
-	name   string
-	net    string
-	detach bool
-}
-
-func (d dockerRunRm) buildArgs() ([]string, error) {
-	if d.image == "" {
-		return nil, errors.New("image must set.")
-	}
-
-	args := []string{
-		"run",
-		"--rm",
-	}
-	if d.mounts != nil {
-		for _, m := range d.mounts {
-			args = append(args, "--mount", m)
-		}
-	}
-	if d.name != "" {
-		args = append(args, "--name", d.name)
-	}
-	if d.net != "" {
-		args = append(args, "--net", d.net)
-	}
-	if d.detach {
-		args = append(args, "--detach")
-	}
-	args = append(args, d.image)
-	if d.cmd != nil {
-		args = append(args, d.cmd...)
-	}
-	return args, nil
 }
 
 type dockerExec struct {

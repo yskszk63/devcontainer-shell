@@ -36,10 +36,9 @@ func resolveWorkspaceFolder(fsys fs.FS, cwd string) (string, string, error) {
 }
 
 type devcontainerUpInput struct {
-	bin                string
-	workspaceFolder    string
-	rebuild            bool
-	additionalFeatures map[string]interface{}
+	bin             string
+	workspaceFolder string
+	rebuild         bool
 }
 
 func (d *devcontainerUpInput) buildArgs() ([]string, error) {
@@ -55,14 +54,6 @@ func (d *devcontainerUpInput) buildArgs() ([]string, error) {
 
 	if d.rebuild {
 		ret = append(ret, "--remove-existing-container")
-	}
-
-	if d.additionalFeatures != nil {
-		b, err := json.Marshal(d.additionalFeatures)
-		if err != nil {
-			return nil, err
-		}
-		ret = append(ret, "--additional-features", string(b))
 	}
 
 	return ret, nil

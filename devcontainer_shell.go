@@ -6,8 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sync"
-
-	"go.uber.org/zap"
 )
 
 type DevcontainerShell struct {
@@ -17,7 +15,6 @@ type DevcontainerShell struct {
 	devcontainerPath     string
 	containerCwd         string
 	Rebuild              bool
-	PortForward          bool
 }
 
 func (d *DevcontainerShell) ContainerId() string {
@@ -81,43 +78,16 @@ func (d *DevcontainerShell) Up() error {
 		return err
 	}
 
-	var additionalFeatures map[string]interface{}
-	if d.PortForward {
-		err := d.docker.runSilently(dockerRunRm{
-			image:  "ghcr.io/yskszk63/devcontainer-portforward-server",
-			name:   "devcontainer-shell-portforward",
-			mounts: []string{"type=volume,source=devcontainer-portforward,target=/data"},
-			net:    "host",
-			detach: true,
-		}, !zap.L().Level().Enabled(zap.DebugLevel))
-		if err != nil {
-			_, known := err.(*exec.ExitError)
-			if !known {
-				return err
-			}
-		}
-		additionalFeatures = map[string]interface{}{
-			"ghcr.io/yskszk63/devcontainer-portforward/devcontainer-portforward:0": struct{}{},
-		}
-	}
-
 	o, err := devcontainerUp(devcontainerUpInput{
-		bin:                d.devcontainerPath,
-		workspaceFolder:    wf,
-		rebuild:            d.Rebuild,
-		additionalFeatures: additionalFeatures,
+		bin:             d.devcontainerPath,
+		workspaceFolder: wf,
+		rebuild:         d.Rebuild,
 	})
 	if err != nil {
 		return err
 	}
 	if o.Outcome != "success" {
 		return errors.New("failed to run `devcontainer up`")
-	}
-
-	if d.PortForward {
-		if err := tryRunForwardServer(d.docker, o); err != nil {
-			return err
-		}
 	}
 
 	d.devcontainerUpOutput = o

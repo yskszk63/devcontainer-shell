@@ -1,11 +1,10 @@
 # devcontainer-shell
 
 My bash launcher for devcontainer instance.
-\+ [Port forwarder](https://github.com/yskszk63/devcontainer-portforward)
 
 ## motivation
 
-As of November 2022, `devcontainer exec` does not seem to work for interactive shells.
+~~As of November 2022, `devcontainer exec` does not seem to work for interactive shells.~~
 
 # Usage
 
