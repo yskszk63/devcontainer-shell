@@ -1,111 +1,69 @@
 package devcontainershell
 
 import (
-	"errors"
+	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"sync"
 )
 
 type DevcontainerShell struct {
-	mutex                sync.Mutex
-	devcontainerUpOutput *devcontainerUpOutput
-	docker               *docker
-	devcontainerPath     string
-	containerCwd         string
-	Rebuild              bool
+	devcontainer devcontainer
+	docker docker
+	relativePath string
 }
 
-func (d *DevcontainerShell) ContainerId() string {
-	return d.devcontainerUpOutput.ContainerId
-}
-
-func (d *DevcontainerShell) ensureDockerResolved() error {
-	if d.docker != nil {
-		return nil
-	}
-
-	docker, err := resolveDocker()
-	if err != nil {
-		return err
-	}
-
-	d.docker = docker
-	return nil
-}
-
-func (d *DevcontainerShell) ensureDevcontainerResolved() error {
-	if d.devcontainerPath != "" {
-		return nil
-	}
-
-	devcontainer, err := exec.LookPath("devcontainer")
-	if err != nil {
-		return err
-	}
-
-	d.devcontainerPath = devcontainer
-	return nil
-}
-
-func (d *DevcontainerShell) ensureResolvePaths() error {
-	if err := d.ensureDockerResolved(); err != nil {
-		return err
-	}
-	if err := d.ensureDevcontainerResolved(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (d *DevcontainerShell) Up() error {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
-	if err := d.ensureResolvePaths(); err != nil {
-		return err
-	}
-
-	root := os.DirFS("/")
+func NewDevcontainerShell() (*DevcontainerShell, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	wf, rel, err := resolveWorkspaceFolder(root, cwd)
+	wf, rel, err := resolveWorkspaceFolder(os.DirFS("/"), cwd)
+	if err != nil {
+		return nil, err
+	}
+
+	devcontainer := devcontainer{
+		workspaceFolder: wf,
+		spawner: defaultSpawner,
+		execer: defaultExecer,
+	}
+
+	docker := docker{
+		spawner: defaultSpawner,
+	}
+
+	return &DevcontainerShell{
+		devcontainer: devcontainer,
+		docker: docker,
+		relativePath: rel,
+	}, nil
+}
+
+func (d *DevcontainerShell) Exec(removeExistingContainer bool, cmd string, args... string) error {
+	r, err := d.devcontainer.up(removeExistingContainer)
 	if err != nil {
 		return err
 	}
 
-	o, err := devcontainerUp(devcontainerUpInput{
-		bin:             d.devcontainerPath,
-		workspaceFolder: wf,
-		rebuild:         d.Rebuild,
+	return d.devcontainer.exec(r.ContainerId, cmd, args...)
+}
+
+func (d *DevcontainerShell) Kill() error {
+	r, err := d.docker.ps(dockerPsInput{
+		noTrunc: true,
+		filter: fmt.Sprintf("label=devcontainer.local_folder=%s", d.devcontainer.workspaceFolder),
 	})
 	if err != nil {
 		return err
 	}
-	if o.Outcome != "success" {
-		return errors.New("failed to run `devcontainer up`")
+
+	if r == nil {
+		return nil
 	}
 
-	d.devcontainerUpOutput = o
-	d.containerCwd = filepath.Join(o.RemoteWorkspaceFolder, rel)
+	if err := d.docker.kill(r.ID); err != nil {
+		return err
+	}
 
 	return nil
-}
-
-func (d *DevcontainerShell) Exec(prog string) error {
-	if d.devcontainerUpOutput == nil {
-		return errors.New("must call Up() before")
-	}
-
-	dockerExec := dockerExec{
-		containerId: d.devcontainerUpOutput.ContainerId,
-		bin:         prog,
-		cwd:         d.containerCwd,
-		user:        d.devcontainerUpOutput.RemoteUser,
-	}
-	return d.docker.run(dockerExec)
 }

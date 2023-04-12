@@ -9,16 +9,12 @@ var shell string
 var rebuild bool
 
 func exec(cmd *cobra.Command, args []string) error {
-	ds := new(devcontainershell.DevcontainerShell)
-	if rebuild {
-		ds.Rebuild = true
-	}
-
-	if err := ds.Up(); err != nil {
+	ds, err := devcontainershell.NewDevcontainerShell()
+	if err != nil {
 		return err
 	}
 
-	if err := ds.Exec(shell); err != nil {
+	if err := ds.Exec(rebuild, shell); err != nil {
 		return err
 	}
 

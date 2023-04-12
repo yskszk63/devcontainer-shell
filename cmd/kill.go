@@ -11,6 +11,11 @@ var killCmd = &cobra.Command {
 	SilenceErrors: true,
 	SilenceUsage: true,
 	RunE: func(c *cobra.Command, args []string) error {
-		return devcontainershell.Kill()
+		ds, err := devcontainershell.NewDevcontainerShell()
+		if err != nil {
+			return err
+		}
+
+		return ds.Kill()
 	},
 }

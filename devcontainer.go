@@ -2,61 +2,20 @@ package devcontainershell
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
-	"io/fs"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-
-	"go.uber.org/zap"
 )
 
-func resolveWorkspaceFolder(fsys fs.FS, cwd string) (string, string, error) {
-	wf := cwd
-	rel := ""
-
-	for {
-		_, err := fs.Stat(fsys, filepath.Join(wf, ".devcontainer/devcontainer.json")[1:])
-		if err != nil && !os.IsNotExist(err) {
-			return "", "", err
-		}
-		if err == nil {
-			return wf, rel, nil
-		}
-
-		if wf == "/" {
-			return "", "", errors.New("workspace-folder not found.")
-		}
-
-		rel = filepath.Join(filepath.Base(wf), rel)
-		wf = filepath.Dir(wf)
-	}
-}
-
-type devcontainerUpInput struct {
-	bin             string
+type devcontainer struct{
 	workspaceFolder string
-	rebuild         bool
+	spawner spawner
+	execer execer
 }
 
-func (d *devcontainerUpInput) buildArgs() ([]string, error) {
-	if d.workspaceFolder == "" {
-		return nil, errors.New("WorkspaceFolder must set.")
-	}
-
-	ret := []string{
-		"up",
-		"--workspace-folder",
-		d.workspaceFolder,
-	}
-
-	if d.rebuild {
-		ret = append(ret, "--remove-existing-container")
-	}
-
-	return ret, nil
+func newDevcontainer(workspaceFolder string) (*devcontainer, error) {
+	return &devcontainer{
+		workspaceFolder: workspaceFolder,
+		spawner: defaultSpawner,
+		execer: defaultExecer,
+	}, nil
 }
 
 type devcontainerUpOutput struct {
@@ -66,28 +25,35 @@ type devcontainerUpOutput struct {
 	RemoteWorkspaceFolder string `json:"remoteWorkspaceFolder"`
 }
 
-func devcontainerUp(input devcontainerUpInput) (*devcontainerUpOutput, error) {
-	args, err := input.buildArgs()
+func (d *devcontainer) up(removeExistingContainer bool) (*devcontainerUpOutput, error) {
+	args := []string{
+		"up",
+		"--workspace-folder",
+		d.workspaceFolder,
+	}
+	if removeExistingContainer {
+		args = append(args, "--remove-existing-container")
+	}
+	o, err := d.spawner("devcontainer", args...)
 	if err != nil {
 		return nil, err
 	}
 
-	if zap.L().Level().Enabled(zap.DebugLevel) {
-		zap.L().Debug(fmt.Sprintf("%s %s", input.bin, strings.Join(args, " ")))
-	}
-
-	proc := exec.Command(input.bin, args...)
-	proc.Stdin = nil
-	proc.Stderr = os.Stderr
-
-	raw, err := proc.Output()
-	if err != nil {
+	ret := new(devcontainerUpOutput)
+	if err := json.Unmarshal(o, ret); err != nil {
 		return nil, err
 	}
+	return ret, nil
+}
 
-	var o devcontainerUpOutput
-	if err := json.Unmarshal(raw, &o); err != nil {
-		return nil, err
+func (d *devcontainer) exec(containerId, cmd string, args... string) error {
+	a := []string{
+		"exec",
+		"--workspace-folder",
+		d.workspaceFolder,
+		cmd,
 	}
-	return &o, nil
+	a = append(a, args...)
+
+	return d.execer("devcontainer", a...)
 }
