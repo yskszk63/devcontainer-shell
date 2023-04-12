@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 )
 
-type devcontainer struct{
+type devcontainer struct {
 	workspaceFolder string
-	spawner spawner
-	execer execer
+	spawner         spawner
+	execer          execer
 }
 
 func newDevcontainer(workspaceFolder string) (*devcontainer, error) {
 	return &devcontainer{
 		workspaceFolder: workspaceFolder,
-		spawner: defaultSpawner,
-		execer: defaultExecer,
+		spawner:         defaultSpawner,
+		execer:          defaultExecer,
 	}, nil
 }
 
@@ -46,7 +46,7 @@ func (d *devcontainer) up(removeExistingContainer bool) (*devcontainerUpOutput, 
 	return ret, nil
 }
 
-func (d *devcontainer) exec(containerId, cmd string, args... string) error {
+func (d *devcontainer) exec(containerId, cmd string, args ...string) error {
 	a := []string{
 		"exec",
 		"--workspace-folder",

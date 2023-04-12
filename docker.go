@@ -4,30 +4,30 @@ import (
 	"encoding/json"
 )
 
-type docker struct{
+type docker struct {
 	spawner spawner
 }
 
-type dockerPsInput struct{
+type dockerPsInput struct {
 	noTrunc bool
-	filter string
+	filter  string
 }
 
-type dockerPsOutput struct{
-	Command string
-	CreatedAt string
-	ID string
-	Image string
-	Labels string
+type dockerPsOutput struct {
+	Command      string
+	CreatedAt    string
+	ID           string
+	Image        string
+	Labels       string
 	LocalVolumes string
-	Mounts string
-	Names string
-	Networks string
-	Ports string
-	RunningFor string
-	Size string
-	State string
-	Status string
+	Mounts       string
+	Names        string
+	Networks     string
+	Ports        string
+	RunningFor   string
+	Size         string
+	State        string
+	Status       string
 }
 
 func (d *docker) ps(input dockerPsInput) (*dockerPsOutput, error) {

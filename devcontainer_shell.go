@@ -7,7 +7,7 @@ import (
 
 type DevcontainerShell struct {
 	devcontainer devcontainer
-	docker docker
+	docker       docker
 	relativePath string
 }
 
@@ -24,8 +24,8 @@ func NewDevcontainerShell() (*DevcontainerShell, error) {
 
 	devcontainer := devcontainer{
 		workspaceFolder: wf,
-		spawner: defaultSpawner,
-		execer: defaultExecer,
+		spawner:         defaultSpawner,
+		execer:          defaultExecer,
 	}
 
 	docker := docker{
@@ -34,12 +34,12 @@ func NewDevcontainerShell() (*DevcontainerShell, error) {
 
 	return &DevcontainerShell{
 		devcontainer: devcontainer,
-		docker: docker,
+		docker:       docker,
 		relativePath: rel,
 	}, nil
 }
 
-func (d *DevcontainerShell) Exec(removeExistingContainer bool, cmd string, args... string) error {
+func (d *DevcontainerShell) Exec(removeExistingContainer bool, cmd string, args ...string) error {
 	r, err := d.devcontainer.up(removeExistingContainer)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (d *DevcontainerShell) Exec(removeExistingContainer bool, cmd string, args.
 func (d *DevcontainerShell) Kill() error {
 	r, err := d.docker.ps(dockerPsInput{
 		noTrunc: true,
-		filter: fmt.Sprintf("label=devcontainer.local_folder=%s", d.devcontainer.workspaceFolder),
+		filter:  fmt.Sprintf("label=devcontainer.local_folder=%s", d.devcontainer.workspaceFolder),
 	})
 	if err != nil {
 		return err

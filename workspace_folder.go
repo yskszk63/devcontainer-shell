@@ -1,10 +1,10 @@
 package devcontainershell
 
 import (
-	"os"
-	"path/filepath"
 	"errors"
 	"io/fs"
+	"os"
+	"path/filepath"
 )
 
 /**
@@ -31,4 +31,3 @@ func resolveWorkspaceFolder(fsys fs.FS, cwd string) (string, string, error) {
 		wf = filepath.Dir(wf)
 	}
 }
-
