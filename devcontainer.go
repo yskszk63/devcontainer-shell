@@ -10,12 +10,8 @@ type devcontainer struct {
 	execer          execer
 }
 
-func newDevcontainer(workspaceFolder string) (*devcontainer, error) {
-	return &devcontainer{
-		workspaceFolder: workspaceFolder,
-		spawner:         defaultSpawner,
-		execer:          defaultExecer,
-	}, nil
+type devcontainerUpInput struct {
+	removeExistingContainer bool
 }
 
 type devcontainerUpOutput struct {
@@ -25,13 +21,13 @@ type devcontainerUpOutput struct {
 	RemoteWorkspaceFolder string `json:"remoteWorkspaceFolder"`
 }
 
-func (d *devcontainer) up(removeExistingContainer bool) (*devcontainerUpOutput, error) {
+func (d *devcontainer) up(input devcontainerUpInput) (*devcontainerUpOutput, error) {
 	args := []string{
 		"up",
 		"--workspace-folder",
 		d.workspaceFolder,
 	}
-	if removeExistingContainer {
+	if input.removeExistingContainer {
 		args = append(args, "--remove-existing-container")
 	}
 	o, err := d.spawner("devcontainer", args...)
@@ -46,14 +42,20 @@ func (d *devcontainer) up(removeExistingContainer bool) (*devcontainerUpOutput, 
 	return ret, nil
 }
 
-func (d *devcontainer) exec(containerId, cmd string, args ...string) error {
+type devcontainerExecInput struct {
+	containerId string
+	cmd         string
+	args        []string
+}
+
+func (d *devcontainer) exec(input devcontainerExecInput) error {
 	a := []string{
 		"exec",
 		"--workspace-folder",
 		d.workspaceFolder,
-		cmd,
+		input.cmd,
 	}
-	a = append(a, args...)
+	a = append(a, input.args...)
 
 	return d.execer("devcontainer", a...)
 }

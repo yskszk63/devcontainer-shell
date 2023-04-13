@@ -39,13 +39,25 @@ func NewDevcontainerShell() (*DevcontainerShell, error) {
 	}, nil
 }
 
-func (d *DevcontainerShell) Exec(removeExistingContainer bool, cmd string, args ...string) error {
-	r, err := d.devcontainer.up(removeExistingContainer)
+type DevcontainerShellExecInput struct {
+	RemoveExistingContainer bool
+	Cmd                     string
+	Args                    []string
+}
+
+func (d *DevcontainerShell) Exec(input DevcontainerShellExecInput) error {
+	r, err := d.devcontainer.up(devcontainerUpInput{
+		removeExistingContainer: input.RemoveExistingContainer,
+	})
 	if err != nil {
 		return err
 	}
 
-	return d.devcontainer.exec(r.ContainerId, cmd, args...)
+	return d.devcontainer.exec(devcontainerExecInput{
+		containerId: r.ContainerId,
+		cmd:         input.Cmd,
+		args:        input.Args,
+	})
 }
 
 func (d *DevcontainerShell) Kill() error {
