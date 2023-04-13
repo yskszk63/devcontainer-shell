@@ -41,8 +41,7 @@ func NewDevcontainerShell() (*DevcontainerShell, error) {
 
 type DevcontainerShellExecInput struct {
 	RemoveExistingContainer bool
-	Cmd                     string
-	Args                    []string
+	Shell                   string
 }
 
 func (d *DevcontainerShell) Exec(input DevcontainerShellExecInput) error {
@@ -53,10 +52,17 @@ func (d *DevcontainerShell) Exec(input DevcontainerShellExecInput) error {
 		return err
 	}
 
+	script := `cd "$1" && exec "$2"`
 	return d.devcontainer.exec(devcontainerExecInput{
 		containerId: r.ContainerId,
-		cmd:         input.Cmd,
-		args:        input.Args,
+		cmd:         "sh",
+		args: []string{
+			"-c",
+			script,
+			"--",
+			d.relativePath,
+			input.Shell,
+		},
 	})
 }
 

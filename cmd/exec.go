@@ -16,7 +16,7 @@ func exec(cmd *cobra.Command, args []string) error {
 
 	if err := ds.Exec(devcontainershell.DevcontainerShellExecInput{
 		RemoveExistingContainer: rebuild,
-		Cmd: shell,
+		Shell: shell,
 	}); err != nil {
 		return err
 	}
