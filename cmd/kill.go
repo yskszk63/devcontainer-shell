@@ -5,11 +5,11 @@ import (
 	"github.com/yskszk63/devcontainer-shell"
 )
 
-var killCmd = &cobra.Command {
-	Use: "kill",
-	Short: "kill devcontainer",
+var killCmd = &cobra.Command{
+	Use:           "kill",
+	Short:         "kill devcontainer",
 	SilenceErrors: true,
-	SilenceUsage: true,
+	SilenceUsage:  true,
 	RunE: func(c *cobra.Command, args []string) error {
 		ds, err := devcontainershell.NewDevcontainerShell()
 		if err != nil {
