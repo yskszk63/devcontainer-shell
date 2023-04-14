@@ -2,70 +2,16 @@ package devcontainershell
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
-	"io/fs"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-
-	"go.uber.org/zap"
 )
 
-func resolveWorkspaceFolder(fsys fs.FS, cwd string) (string, string, error) {
-	wf := cwd
-	rel := ""
-
-	for {
-		_, err := fs.Stat(fsys, filepath.Join(wf, ".devcontainer/devcontainer.json")[1:])
-		if err != nil && !os.IsNotExist(err) {
-			return "", "", err
-		}
-		if err == nil {
-			return wf, rel, nil
-		}
-
-		if wf == "/" {
-			return "", "", errors.New("workspace-folder not found.")
-		}
-
-		rel = filepath.Join(filepath.Base(wf), rel)
-		wf = filepath.Dir(wf)
-	}
+type devcontainer struct {
+	workspaceFolder string
+	spawner         spawner
+	execer          execer
 }
 
 type devcontainerUpInput struct {
-	bin                string
-	workspaceFolder    string
-	rebuild            bool
-	additionalFeatures map[string]interface{}
-}
-
-func (d *devcontainerUpInput) buildArgs() ([]string, error) {
-	if d.workspaceFolder == "" {
-		return nil, errors.New("WorkspaceFolder must set.")
-	}
-
-	ret := []string{
-		"up",
-		"--workspace-folder",
-		d.workspaceFolder,
-	}
-
-	if d.rebuild {
-		ret = append(ret, "--remove-existing-container")
-	}
-
-	if d.additionalFeatures != nil {
-		b, err := json.Marshal(d.additionalFeatures)
-		if err != nil {
-			return nil, err
-		}
-		ret = append(ret, "--additional-features", string(b))
-	}
-
-	return ret, nil
+	removeExistingContainer bool
 }
 
 type devcontainerUpOutput struct {
@@ -75,28 +21,41 @@ type devcontainerUpOutput struct {
 	RemoteWorkspaceFolder string `json:"remoteWorkspaceFolder"`
 }
 
-func devcontainerUp(input devcontainerUpInput) (*devcontainerUpOutput, error) {
-	args, err := input.buildArgs()
+func (d *devcontainer) up(input devcontainerUpInput) (*devcontainerUpOutput, error) {
+	args := []string{
+		"up",
+		"--workspace-folder",
+		d.workspaceFolder,
+	}
+	if input.removeExistingContainer {
+		args = append(args, "--remove-existing-container")
+	}
+	o, err := d.spawner("devcontainer", args...)
 	if err != nil {
 		return nil, err
 	}
 
-	if zap.L().Level().Enabled(zap.DebugLevel) {
-		zap.L().Debug(fmt.Sprintf("%s %s", input.bin, strings.Join(args, " ")))
-	}
-
-	proc := exec.Command(input.bin, args...)
-	proc.Stdin = nil
-	proc.Stderr = os.Stderr
-
-	raw, err := proc.Output()
-	if err != nil {
+	ret := new(devcontainerUpOutput)
+	if err := json.Unmarshal(o, ret); err != nil {
 		return nil, err
 	}
+	return ret, nil
+}
 
-	var o devcontainerUpOutput
-	if err := json.Unmarshal(raw, &o); err != nil {
-		return nil, err
+type devcontainerExecInput struct {
+	containerId string
+	cmd         string
+	args        []string
+}
+
+func (d *devcontainer) exec(input devcontainerExecInput) error {
+	a := []string{
+		"exec",
+		"--workspace-folder",
+		d.workspaceFolder,
+		input.cmd,
 	}
-	return &o, nil
+	a = append(a, input.args...)
+
+	return d.execer("devcontainer", a...)
 }

@@ -23,3 +23,12 @@ devcontainer-up:
 .PHONY: devcontainer-shell
 devcontainer-shell:
 	CGO_ENABLED=0 go build -o=$@ ./bin/devcontainer-shell
+
+.PHONY: test cov.out
+test: cov.html
+
+cov.out:
+	go test -v -coverpkg . -coverprofile $@
+
+cov.html: cov.out
+	go tool cover -html=$< -o $@

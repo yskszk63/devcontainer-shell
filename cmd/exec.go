@@ -6,23 +6,18 @@ import (
 )
 
 var shell string
-var noForwardport bool
 var rebuild bool
 
 func exec(cmd *cobra.Command, args []string) error {
-	ds := new(devcontainershell.DevcontainerShell)
-	if rebuild {
-		ds.Rebuild = true
-	}
-	if !noForwardport {
-		ds.PortForward = true
-	}
-
-	if err := ds.Up(); err != nil {
+	ds, err := devcontainershell.NewDevcontainerShell()
+	if err != nil {
 		return err
 	}
 
-	if err := ds.Exec(shell); err != nil {
+	if err := ds.Exec(devcontainershell.DevcontainerShellExecInput{
+		RemoveExistingContainer: rebuild,
+		Shell: shell,
+	}); err != nil {
 		return err
 	}
 
@@ -39,7 +34,6 @@ var execCmd = &cobra.Command {
 
 func setupExecCmd(c *cobra.Command) {
 	c.Flags().StringVarP(&shell, "shell", "s", "bash", "using shell program")
-	c.Flags().BoolVarP(&noForwardport, "no-forward", "F", false, "no foward port")
 	c.Flags().BoolVarP(&rebuild, "rebuild", "b", false, "remove existing container")
 }
 

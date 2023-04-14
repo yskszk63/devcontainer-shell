@@ -1,65 +1,78 @@
 package devcontainershell
 
 import (
-	"os"
+	"errors"
 	"testing"
 )
 
-func TestResolveWorkspaceFolder(t *testing.T) {
-	tests := []struct {
-		name     string
-		root     string
-		dir      string
-		err      string
-		wantsWf  string
-		wantsRel string
-	}{
-		{
-			name:     "exists",
-			root:     "./testdata/exists/",
-			dir:      "/a",
-			wantsWf:  "/a",
-			wantsRel: "",
-		},
-		{
-			name:     "exists2",
-			root:     "./testdata/exists/",
-			dir:      "/a/b",
-			wantsWf:  "/a",
-			wantsRel: "b",
-		},
-		{
-			name:     "exists3",
-			root:     "./testdata/exists/",
-			dir:      "/a/b/c",
-			wantsWf:  "/a",
-			wantsRel: "b/c",
-		},
-		{
-			name: "notexists",
-			root: "./testdata/notexists/",
-			dir:  "/a/b/c",
-			err:  "workspace-folder not found.",
-		},
+func TestDevcontainerUp(t *testing.T) {
+	spawner := func(cmd string, args ...string) ([]byte, error) {
+		b := `{}`
+		return []byte(b), nil
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			fsys := os.DirFS(test.root)
-			wf, rel, err := resolveWorkspaceFolder(fsys, test.dir)
-			if err != nil {
-				if err.Error() != test.err {
-					t.Fatal(err)
-				}
-				return
-			}
+	d := devcontainer{
+		spawner: spawner,
+	}
 
-			if wf != test.wantsWf {
-				t.Errorf("%s != %s", wf, test.wantsWf)
-			}
-			if rel != test.wantsRel {
-				t.Errorf("%s != %s", rel, test.wantsRel)
-			}
-		})
+	_, err := d.up(devcontainerUpInput{
+		removeExistingContainer: true,
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDevcontainerUpFailed(t *testing.T) {
+	spawner := func(cmd string, args ...string) ([]byte, error) {
+		return nil, errors.New("ERR")
+	}
+
+	d := devcontainer{
+		spawner: spawner,
+	}
+
+	_, err := d.up(devcontainerUpInput{
+		removeExistingContainer: true,
+	})
+
+	if err == nil {
+		t.Fail()
+	}
+}
+
+func TestDevcontainerUpUnexpectedOutput(t *testing.T) {
+	spawner := func(cmd string, args ...string) ([]byte, error) {
+		b := "\"\""
+		return []byte(b), nil
+	}
+
+	d := devcontainer{
+		spawner: spawner,
+	}
+
+	_, err := d.up(devcontainerUpInput{
+		removeExistingContainer: true,
+	})
+
+	if err == nil {
+		t.Fail()
+	}
+}
+
+func TestDevcontainerExec(t *testing.T) {
+	execer := func(cmd string, args ...string) error {
+		return nil
+	}
+
+	d := devcontainer{
+		execer: execer,
+	}
+
+	if err := d.exec(devcontainerExecInput{
+		containerId: "1",
+	}); err != nil {
+		t.Fatal(err)
 	}
 }

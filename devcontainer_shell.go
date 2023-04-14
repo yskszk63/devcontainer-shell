@@ -1,141 +1,87 @@
 package devcontainershell
 
 import (
-	"errors"
+	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"sync"
-
-	"go.uber.org/zap"
 )
 
 type DevcontainerShell struct {
-	mutex                sync.Mutex
-	devcontainerUpOutput *devcontainerUpOutput
-	docker               *docker
-	devcontainerPath     string
-	containerCwd         string
-	Rebuild              bool
-	PortForward          bool
+	devcontainer devcontainer
+	docker       docker
+	relativePath string
 }
 
-func (d *DevcontainerShell) ContainerId() string {
-	return d.devcontainerUpOutput.ContainerId
-}
-
-func (d *DevcontainerShell) ensureDockerResolved() error {
-	if d.docker != nil {
-		return nil
-	}
-
-	docker, err := resolveDocker()
-	if err != nil {
-		return err
-	}
-
-	d.docker = docker
-	return nil
-}
-
-func (d *DevcontainerShell) ensureDevcontainerResolved() error {
-	if d.devcontainerPath != "" {
-		return nil
-	}
-
-	devcontainer, err := exec.LookPath("devcontainer")
-	if err != nil {
-		return err
-	}
-
-	d.devcontainerPath = devcontainer
-	return nil
-}
-
-func (d *DevcontainerShell) ensureResolvePaths() error {
-	if err := d.ensureDockerResolved(); err != nil {
-		return err
-	}
-	if err := d.ensureDevcontainerResolved(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (d *DevcontainerShell) Up() error {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
-	if err := d.ensureResolvePaths(); err != nil {
-		return err
-	}
-
-	root := os.DirFS("/")
+func NewDevcontainerShell() (*DevcontainerShell, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	wf, rel, err := resolveWorkspaceFolder(root, cwd)
+	wf, rel, err := resolveWorkspaceFolder(os.DirFS("/"), cwd)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	var additionalFeatures map[string]interface{}
-	if d.PortForward {
-		err := d.docker.runSilently(dockerRunRm{
-			image:  "ghcr.io/yskszk63/devcontainer-portforward-server",
-			name:   "devcontainer-shell-portforward",
-			mounts: []string{"type=volume,source=devcontainer-portforward,target=/data"},
-			net:    "host",
-			detach: true,
-		}, !zap.L().Level().Enabled(zap.DebugLevel))
-		if err != nil {
-			_, known := err.(*exec.ExitError)
-			if !known {
-				return err
-			}
-		}
-		additionalFeatures = map[string]interface{}{
-			"ghcr.io/yskszk63/devcontainer-portforward/devcontainer-portforward:0": struct{}{},
-		}
+	devcontainer := devcontainer{
+		workspaceFolder: wf,
+		spawner:         defaultSpawner,
+		execer:          defaultExecer,
 	}
 
-	o, err := devcontainerUp(devcontainerUpInput{
-		bin:                d.devcontainerPath,
-		workspaceFolder:    wf,
-		rebuild:            d.Rebuild,
-		additionalFeatures: additionalFeatures,
+	docker := docker{
+		spawner: defaultSpawner,
+	}
+
+	return &DevcontainerShell{
+		devcontainer: devcontainer,
+		docker:       docker,
+		relativePath: rel,
+	}, nil
+}
+
+type DevcontainerShellExecInput struct {
+	RemoveExistingContainer bool
+	Shell                   string
+}
+
+func (d *DevcontainerShell) Exec(input DevcontainerShellExecInput) error {
+	r, err := d.devcontainer.up(devcontainerUpInput{
+		removeExistingContainer: input.RemoveExistingContainer,
 	})
 	if err != nil {
 		return err
 	}
-	if o.Outcome != "success" {
-		return errors.New("failed to run `devcontainer up`")
-	}
 
-	if d.PortForward {
-		if err := tryRunForwardServer(d.docker, o); err != nil {
-			return err
-		}
-	}
-
-	d.devcontainerUpOutput = o
-	d.containerCwd = filepath.Join(o.RemoteWorkspaceFolder, rel)
-
-	return nil
+	script := `cd "$1" && exec "$2"`
+	return d.devcontainer.exec(devcontainerExecInput{
+		containerId: r.ContainerId,
+		cmd:         "sh",
+		args: []string{
+			"-c",
+			script,
+			"--",
+			d.relativePath,
+			input.Shell,
+		},
+	})
 }
 
-func (d *DevcontainerShell) Exec(prog string) error {
-	if d.devcontainerUpOutput == nil {
-		return errors.New("must call Up() before")
+func (d *DevcontainerShell) Kill() error {
+	r, err := d.docker.ps(dockerPsInput{
+		noTrunc: true,
+		filter:  fmt.Sprintf("label=devcontainer.local_folder=%s", d.devcontainer.workspaceFolder),
+	})
+	if err != nil {
+		return err
 	}
 
-	dockerExec := dockerExec{
-		containerId: d.devcontainerUpOutput.ContainerId,
-		bin:         prog,
-		cwd:         d.containerCwd,
-		user:        d.devcontainerUpOutput.RemoteUser,
+	if r == nil {
+		return nil
 	}
-	return d.docker.run(dockerExec)
+
+	if err := d.docker.kill(r.ID); err != nil {
+		return err
+	}
+
+	return nil
 }
