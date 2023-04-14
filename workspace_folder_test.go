@@ -1,6 +1,8 @@
 package devcontainershell
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"testing"
 )
@@ -61,5 +63,18 @@ func TestResolveWorkspaceFolder(t *testing.T) {
 				t.Errorf("%s != %s", rel, test.wantsRel)
 			}
 		})
+	}
+}
+
+type errorFs struct{}
+
+func (errorFs) Open(name string) (fs.File, error) {
+	return nil, errors.New("ERR")
+}
+
+func TestResolveWorkspaceFolderFsError(t *testing.T) {
+	_, _, err := resolveWorkspaceFolder(errorFs{}, "")
+	if err == nil {
+		t.Fail()
 	}
 }

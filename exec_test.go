@@ -9,6 +9,13 @@ func TestDevaultSpawner(t *testing.T) {
 	}
 }
 
+func TestDevaultSpawnerError(t *testing.T) {
+	_, err := defaultSpawner("false")
+	if err == nil {
+		t.Fail()
+	}
+}
+
 func TestDefaultExecerFail(t *testing.T) {
 	err := defaultExecer("/dev/null")
 	if err == nil {
