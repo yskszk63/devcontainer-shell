@@ -16,7 +16,7 @@ func exec(cmd *cobra.Command, args []string) error {
 
 	if err := ds.Exec(devcontainershell.DevcontainerShellExecInput{
 		RemoveExistingContainer: rebuild,
-		Shell: shell,
+		Shell:                   shell,
 	}); err != nil {
 		return err
 	}
@@ -24,12 +24,12 @@ func exec(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-var execCmd = &cobra.Command {
-	Use: "exec",
-	Short: "execute shell on devcontainer",
+var execCmd = &cobra.Command{
+	Use:           "exec",
+	Short:         "execute shell on devcontainer",
 	SilenceErrors: true,
-	SilenceUsage: true,
-	RunE: exec,
+	SilenceUsage:  true,
+	RunE:          exec,
 }
 
 func setupExecCmd(c *cobra.Command) {

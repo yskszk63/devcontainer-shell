@@ -7,11 +7,11 @@ import (
 
 var debug bool
 
-var rootCmd = &cobra.Command {
-	Use: "devcontainer-shell",
-	Short: "devcontainer shell helper",
+var rootCmd = &cobra.Command{
+	Use:           "devcontainer-shell",
+	Short:         "devcontainer shell helper",
 	SilenceErrors: true,
-	SilenceUsage: true,
+	SilenceUsage:  true,
 	PersistentPreRun: func(c *cobra.Command, args []string) {
 		if debug {
 			logger := zap.Must(zap.NewDevelopmentConfig().Build())
