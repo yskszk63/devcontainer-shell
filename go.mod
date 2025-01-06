@@ -5,7 +5,6 @@ go 1.19
 require (
 	github.com/spf13/cobra v1.6.1
 	go.uber.org/zap v1.24.0
-	golang.org/x/sync v0.1.0
 )
 
 require (
