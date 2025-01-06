@@ -52,7 +52,7 @@ func (d *DevcontainerShell) Exec(input DevcontainerShellExecInput) error {
 		return err
 	}
 
-	script := `cd "$1" && exec "$2"`
+	script := `LANG=en_US.utf8;export LANG;cd "$1" && exec "$2"`
 	return d.devcontainer.exec(devcontainerExecInput{
 		containerId: r.ContainerId,
 		cmd:         "sh",
